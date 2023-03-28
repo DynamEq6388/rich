@@ -436,9 +436,12 @@ class Traceback:
 
             for frame_summary, line_no in walk_tb(traceback):
                 filename = frame_summary.f_code.co_filename
-                if filename and not filename.startswith("<"):
-                    if not os.path.isabs(filename):
-                        filename = os.path.join(_IMPORT_CWD, filename)
+                if (
+                    filename
+                    and not filename.startswith("<")
+                    and not os.path.isabs(filename)
+                ):
+                    filename = os.path.join(_IMPORT_CWD, filename)
                 if frame_summary.f_locals.get("_rich_traceback_omit", False):
                     continue
 
@@ -566,15 +569,16 @@ class Traceback:
     def _render_syntax_error(self, syntax_error: _SyntaxError) -> RenderResult:
         highlighter = ReprHighlighter()
         path_highlighter = PathHighlighter()
-        if syntax_error.filename != "<stdin>":
-            if os.path.exists(syntax_error.filename):
-                text = Text.assemble(
-                    (f" {syntax_error.filename}", "pygments.string"),
-                    (":", "pygments.text"),
-                    (str(syntax_error.lineno), "pygments.number"),
-                    style="pygments.text",
-                )
-                yield path_highlighter(text)
+        if syntax_error.filename != "<stdin>" and os.path.exists(
+            syntax_error.filename
+        ):
+            text = Text.assemble(
+                (f" {syntax_error.filename}", "pygments.string"),
+                (":", "pygments.text"),
+                (str(syntax_error.lineno), "pygments.number"),
+                style="pygments.text",
+            )
+            yield path_highlighter(text)
         syntax_error_text = highlighter(syntax_error.line.rstrip())
         syntax_error_text.no_wrap = True
         offset = min(syntax_error.offset - 1, len(syntax_error_text))
